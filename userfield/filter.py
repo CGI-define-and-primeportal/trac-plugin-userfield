@@ -13,6 +13,7 @@ from genshi.builder import tag
 from genshi.filters.transform import Transformer
 
 from simplifiedpermissionsadminplugin.model import Group
+from simplifiedpermissionsadminplugin.api import IUserLookupProvider
 
 import time
 from itertools import chain
@@ -25,6 +26,7 @@ class UserFieldModule(Component):
     match_req = ListOption('userfield', 'match_request', default='[]',
         doc='Additional request paths to match (use input class="user-field")')
 
+    user_lookup_providers = ExtensionPoint(IUserLookupProvider)
     implements(ITicketManipulator, ITemplateStreamFilter)
 
     # ITemplateStreamFilter methods
@@ -39,8 +41,7 @@ class UserFieldModule(Component):
         else:
             patterns = chain(('/newticket',
                               '/ticket',
-                              '/simpleticket',
-                              '/timeline'),
+                              '/simpleticket'),
                              self.match_req
                             )
 
@@ -65,8 +66,7 @@ class UserFieldModule(Component):
                         groups[gr]['members'].append(session)
 
         add_script_data(req, {'userfield_selector': ','.join(selector),
-                              'userGroups': groups,
-                             })
+                              'userGroups': groups })
         add_script(req, 'userfield/js/userfield.js')
 
         return stream
@@ -75,12 +75,43 @@ class UserFieldModule(Component):
     def prepare_ticket(self, req, ticket, fields, actions):
         pass
 
-    def validate_ticket(self, req, ticket): # dmy mdy ymd
+    def validate_ticket(self, req, ticket):
+        """Validate any user fields by checking to see if the specified user
+        belongs to any of the fields' allowed groups"""
         for field in self._user_fields():
-            field_layout_config = TicketModule(self.env).field_layout_controller.get_layout_for_field_on_type(ticket['type'],
-                                                                                                              field)
-            if field_layout_config:
-                return []
+            flc = TicketModule(self.env).field_layout_controller
+            fl_config = flc.get_layout_for_field_on_type(ticket['type'],field)
+            if fl_config:
+
+                username = (ticket[field] or u'').strip()
+                valid_groups = self._get_valid_groups(field)
+                valid = False
+
+                if not username and not fl_config.get("mandatory"):
+                    continue
+
+                try:
+                    for provider in self.user_lookup_providers:
+                        info = provider.fetch_user_data(username)
+                        if info and "groups" in info:
+                            if any(g in info["groups"] for g in valid_groups):
+                                valid = True
+                                break
+
+                    if valid:
+                        continue
+                    else:
+                        yield field, ("User '%s', selected for field '%s' does"
+                                      " not appear to be a member of any of"
+                                      " the valid groups '%s'" % (username,
+                                        field, ", ".join(valid_groups)))
+
+                except Exception:
+                    self.log.warn('UserFieldModule: Got an exception, '
+                                  'assuming it is a validation failure.\n%s',
+                                  format_exc())
+                    yield field, ("Field %s does not appear to contain a valid"
+                                  " user" % (field))
 
     # Internal methods
     def _user_fields(self):
@@ -88,6 +119,15 @@ class UserFieldModule(Component):
         for key, value in self.config['ticket-custom'].options():
             if len(key.split(".")) == 1 and value == "user":
                 yield key.split('.', 1)[0]
+
+    def _get_valid_groups(self, field):
+        allowed_groups = self.config.get("ticket-custom", field+".groups")
+        if not allowed_groups:
+            return []
+        elif allowed_groups == "*":
+            return [sid for sid in Group.groupsBy(self.env)]
+        else:
+            return allowed_groups.split("|")
 
 
 class CustomFieldAdminTweak(Component):
@@ -102,16 +142,20 @@ class CustomFieldAdminTweak(Component):
         return []
 
     def pre_process_request(self, req, handler):
-        if req.method == "POST" and req.path_info.startswith(u"/admin/ticket/customfields"):
+        valid_page = req.path_info.startswith(u"/admin/ticket/customfields")
+        if req.method == "POST" and valid_page:
             if req.args.get('type') == 'user':
                 if req.args.get("all_or_selection") == "all":
-                    self.config.set('ticket-custom', '%s.groups'%(req.args.get('name')), '*')
+                    self.config.set('ticket-custom',
+                                    '%s.groups'%(req.args.get('name')), '*')
                 else :
                     user_groups = req.args.get("user_groups", [])
                     if isinstance(user_groups, list):
                         user_groups = "|".join(user_groups)
 
-                    self.config.set('ticket-custom', '%s.groups'%(req.args.get('name')), user_groups)
+                    self.config.set('ticket-custom',
+                                    '%s.groups'% (req.args.get('name')),
+                                    user_groups)
         return handler
 
     def post_process_request(self, template, content_type):
@@ -131,7 +175,8 @@ class CustomFieldAdminTweak(Component):
         currently_editing = edit_name and not invalid_edit
 
         if currently_editing:
-            groups = self.config.get("ticket-custom", edit_name + ".groups").split("|")
+            groups = self.config.get("ticket-custom", edit_name+".groups")
+            groups = groups.split("|")
         else:
             groups = []
 
@@ -171,12 +216,13 @@ class CustomFieldAdminTweak(Component):
         if filename == "customfieldadmin.html":
             add_script(req, 'userfield/js/customfield-admin.js')
             selected = None 
-            customfield = data['cfadmin'].get('customfield', None)  
+            customfield = data['cfadmin'].get('customfield', None)
             if customfield:
                 if customfield['type'] == 'user':
                     selected = 'selected' 
             stream = stream | Transformer('.//select[@id="type"]').append(
-                tag.option('User List', value='user', id="user_type_option", selected = selected)
+                tag.option('User List', value='user', id="user_type_option",
+                           selected=selected)
             )
             stream = stream | Transformer(
                 './/div[@id="field-label"]'

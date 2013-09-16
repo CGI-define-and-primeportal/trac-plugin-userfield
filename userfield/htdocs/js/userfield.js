@@ -77,6 +77,7 @@ $(document).ready(function($) {
       }
     });
 
+    $select.prepend("<option value=''></option>");
     $(this).select2(sel2options);
     $(this).on("select2-selecting", function(e) {
       if($(e.object.element).hasClass("remote")) {
@@ -117,12 +118,12 @@ function get_results(select, group, $option, selectedIndex) {
 function format_results(label, results) {
   var $optgroup = $("<optgroup class='remote-open' label='" + label + "'></optgroup>");
   if(results.length == 1) {
-    var groupMembers = results[0].children,
+    var groupMembers = results[0].members,
         memberCount = groupMembers.length;
 
     for(var j = 0; j < memberCount; j ++) {
       $optgroup.append("<option value='" + groupMembers[j].id + "'>" +
-                         groupMembers[j].displayName + 
+                         (groupMembers[j].name || groupsMembers[j].id) + 
                        "</option>");
     }
   }

@@ -13,7 +13,7 @@ from genshi.builder import tag
 from genshi.filters.transform import Transformer
 
 from simplifiedpermissionsadminplugin.model import Group
-from simplifiedpermissionsadminplugin.api import IUserLookupProvider
+from simplifiedpermissionsadminplugin.api import SimplifiedPermissionsSystem
 
 import time
 from itertools import chain
@@ -29,7 +29,6 @@ class UserFieldModule(Component):
     transform_owner_reporter = BoolOption('userfield', 'transform_owner_reporter', default='true',
         doc='Transform the owner and reporter fields into user fields too')
 
-    user_lookup_providers = ExtensionPoint(IUserLookupProvider)
     implements(ITicketManipulator, ITemplateStreamFilter)
 
     # ITemplateStreamFilter methods
@@ -76,7 +75,8 @@ class UserFieldModule(Component):
                     continue
 
                 try:
-                    for provider in self.user_lookup_providers:
+                    spsystem = SimplifiedPermissionsSystem(self.env)
+                    for provider in spsystem.user_lookup_providers:
                         info = provider.fetch_user_data(username)
                         if info and "groups" in info:
                             if any(g in info["groups"] for g in valid_groups):

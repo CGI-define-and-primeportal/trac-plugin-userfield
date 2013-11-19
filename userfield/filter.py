@@ -13,7 +13,7 @@ from genshi.builder import tag
 from genshi.filters.transform import Transformer
 
 from simplifiedpermissionsadminplugin.model import Group
-from simplifiedpermissionsadminplugin.api import IUserLookupProvider
+from simplifiedpermissionsadminplugin.api import SimplifiedPermissionsSystem
 
 import time
 from itertools import chain
@@ -26,48 +26,31 @@ class UserFieldModule(Component):
     match_req = ListOption('userfield', 'match_request', default='[]',
         doc='Additional request paths to match (use input class="user-field")')
 
-    user_lookup_providers = ExtensionPoint(IUserLookupProvider)
+    transform_owner_reporter = BoolOption('userfield', 'transform_owner_reporter', default='true',
+        doc='Transform the owner and reporter fields into user fields too')
+
     implements(ITicketManipulator, ITemplateStreamFilter)
 
     # ITemplateStreamFilter methods
     def filter_stream(self, req, method, filename, stream, data):
 
-        apply_filter = False
-
         selector = ['.user-field']
-        if filename == 'ticket.html':
-            selector.extend('#field-' + n for n in self._user_fields())
-            apply_filter = True
-        else:
-            patterns = chain(('/newticket',
-                              '/ticket',
-                              '/simpleticket'),
-                             self.match_req
-                            )
+        page_map = {
+            "ticket.html": ["#field-owner", "#field-reporter"],
+            "query.html": ["#mods-filters input[name$='_" + field + "']"
+                            for field in ("owner", "reporter")],
+            "admin_components.html": ["input[name='owner']"]
+        }
 
-            apply_filter = req.path_info.startswith(tuple(patterns))
+        if filename in page_map:
+            if filename == "ticket.html":
+                selector.extend('#field-' + n for n in self._user_fields())
+            if self.transform_owner_reporter:
+                selector.extend(page_map[filename])
 
-        if not apply_filter:
-            return stream
-
-        perms = sorted(PermissionSystem(self.env).get_all_permissions())
-        grs = Group.groupsBy(self.env)
-        groups = {}
-        for gr in grs:
-            group = Group(self.env, gr)
-            groups[gr] = {}
-            groups[gr]['label'] = group.label
-            if not group.external_group:
-                groups[gr]['members'] = []
-                for subject, permission in perms:
-                    if permission == gr and subject not in grs:
-                        session = DetachedSession(self.env, subject)
-                        session.update(username=subject)
-                        groups[gr]['members'].append(session)
-
-        add_script_data(req, {'userfield_selector': ','.join(selector),
-                              'userGroups': groups })
-        add_script(req, 'userfield/js/userfield.js')
+            self._add_groups_data(req)
+            add_script_data(req, {'userfieldSelector': ','.join(selector) })
+            add_script(req, 'userfield/js/userfield.js')
 
         return stream
 
@@ -81,8 +64,9 @@ class UserFieldModule(Component):
         for field in self._user_fields():
             flc = TicketModule(self.env).field_layout_controller
             fl_config = flc.get_layout_for_field_on_type(ticket['type'],field)
-            if fl_config:
+            manual_entry = self.config.get("ticket-custom", field + ".manual")
 
+            if not manual_entry and fl_config:
                 username = (ticket[field] or u'').strip()
                 valid_groups = self._get_valid_groups(field)
                 valid = False
@@ -91,7 +75,8 @@ class UserFieldModule(Component):
                     continue
 
                 try:
-                    for provider in self.user_lookup_providers:
+                    spsystem = SimplifiedPermissionsSystem(self.env)
+                    for provider in spsystem.user_lookup_providers:
                         info = provider.fetch_user_data(username)
                         if info and "groups" in info:
                             if any(g in info["groups"] for g in valid_groups):
@@ -112,6 +97,24 @@ class UserFieldModule(Component):
                                   format_exc())
                     yield field, ("Field %s does not appear to contain a valid"
                                   " user" % (field))
+
+    def _add_groups_data(self, req, allow_manual=False):
+        perms = sorted(PermissionSystem(self.env).get_all_permissions())
+        grs = Group.groupsBy(self.env)
+        groups = {}
+        for gr in grs:
+            group = Group(self.env, gr)
+            groups[gr] = {}
+            groups[gr]['label'] = group.label
+            if not group.external_group:
+                groups[gr]['members'] = []
+                for subject, permission in perms:
+                    if permission == gr and subject not in grs:
+                        session = DetachedSession(self.env, subject)
+                        session.update(username=subject)
+                        groups[gr]['members'].append(session)
+
+        add_script_data(req, {'userGroups': groups })
 
     # Internal methods
     def _user_fields(self):
@@ -145,6 +148,9 @@ class CustomFieldAdminTweak(Component):
         valid_page = req.path_info.startswith(u"/admin/ticket/customfields")
         if req.method == "POST" and valid_page:
             if req.args.get('type') == 'user':
+                self.config.set('ticket-custom', '%s.manual'%(req.args.get('name')),
+                                req.args.get("manual_selection") == "true" and "true" or "false")
+
                 if req.args.get("all_or_selection") == "all":
                     self.config.set('ticket-custom',
                                     '%s.groups'%(req.args.get('name')), '*')
@@ -179,6 +185,23 @@ class CustomFieldAdminTweak(Component):
             groups = groups.split("|")
         else:
             groups = []
+
+        is_manual = self.config.get("ticket-custom", edit_name+".manual")
+
+        manual = tag.div(
+                    tag.label(
+                        "Allow manual entry",
+                        for_="manual_selection",
+                        class_="fixed-width-label"
+                    ),
+                    tag.select(
+                        tag.option("No", value="false", selected=(not is_manual or None)),
+                        tag.option("Yes", value="true", selected=(is_manual or None)),
+                        name="manual_selection",
+                        class_="large"
+                    ),
+                    class_="field"
+                )
 
         radios = tag(
                     tag.label(
@@ -228,15 +251,19 @@ class CustomFieldAdminTweak(Component):
                 './/div[@id="field-label"]'
             ).after(
                 tag.div(
-                    tag.label(
-                        'Included Groups',
-                        for_="user-groups",
-                        class_="fixed-width-label",
+                    tag.div(
+                        tag.label(
+                            'Included Groups',
+                            for_="user-groups",
+                            class_="fixed-width-label",
+                        ),
+                        radios,
+                        select,
+                        class_="field",
                     ),
-                    radios,
-                    select,
-                    class_="field hidden",
-                    id="user-groups"
+                    manual,
+                    id="user-groups",
+                    class_="hidden"
                 )
             )
         return stream

@@ -190,7 +190,7 @@ class CustomFieldAdminTweak(Component):
 
         manual = tag.div(
                     tag.label(
-                        "Allow manual entry",
+                        "Allow manual entry:",
                         for_="manual_selection",
                         class_="fixed-width-label"
                     ),
@@ -253,7 +253,7 @@ class CustomFieldAdminTweak(Component):
                 tag.div(
                     tag.div(
                         tag.label(
-                            'Included Groups',
+                            'Included groups:',
                             for_="user-groups",
                             class_="fixed-width-label",
                         ),

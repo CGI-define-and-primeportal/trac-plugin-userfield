@@ -57,7 +57,6 @@ $(document).ready(function($) {
 
     // Process clicking on remote group
     $select.on("select2-selecting", function(e) {
-      console.log("selecting");
       event_option_selected(e, $select);
     });
   }
@@ -123,7 +122,10 @@ $(document).ready(function($) {
         break;
       }
       else {
-        opts.data.results.push(get_group_data(groupName));
+        var group = window.userGroups[groupName];
+        if(group) {
+          opts.data.results.push(get_group_data(group));
+        }
       }
     }
 
@@ -167,15 +169,12 @@ $(document).ready(function($) {
    * cache the results for reuse
    */
   var optgroupCache = {};
-  function get_group_data(groupName) {
-    var group = window.userGroups[groupName];
-    if(group) {
-      if(group.members) {
-        return data_optgroup(groupName, group);
-      }
-      else {
-        return data_remote(groupName, group.label);
-      }
+  function get_group_data(group) {
+    if(group.members) {
+      return data_optgroup(groupName, group);
+    }
+    else {
+      return data_remote(groupName, group.label);
     }
   }
 

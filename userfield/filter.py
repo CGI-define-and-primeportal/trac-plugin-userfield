@@ -12,6 +12,8 @@ from trac.web.session import DetachedSession
 from genshi.builder import tag
 from genshi.filters.transform import Transformer
 
+from autocompleteplugin.model import AutoCompleteGroup
+
 from simplifiedpermissionsadminplugin.model import Group
 from simplifiedpermissionsadminplugin.api import SimplifiedPermissionsSystem
 
@@ -100,19 +102,22 @@ class UserFieldModule(Component):
 
     def _add_groups_data(self, req, allow_manual=False):
         perms = sorted(PermissionSystem(self.env).get_all_permissions())
-        grs = Group.groupsBy(self.env)
+        autocomplete = AutoCompleteGroup(self.env)
+
+        all_groups = set(Group.groupsBy(self.env))
+        shown_groups = autocomplete.get_autocomplete_values('shown_groups')
+
         groups = {}
-        for gr in grs:
-            group = Group(self.env, gr)
-            groups[gr] = {}
-            groups[gr]['label'] = group.label
+        for group_name in shown_groups:
+            group = Group(self.env, group_name)
+            groups[group_name] = { 'label': group.label }
             if not group.external_group:
-                groups[gr]['members'] = []
+                groups[group_name]['members'] = []
                 for subject, permission in perms:
-                    if permission == gr and subject not in grs:
+                    if permission == group_name and subject not in all_groups:
                         session = DetachedSession(self.env, subject)
                         session.update(username=subject)
-                        groups[gr]['members'].append(session)
+                        groups[group_name]['members'].append(session)
 
         add_script_data(req, {'userGroups': groups })
 
@@ -227,7 +232,8 @@ class CustomFieldAdminTweak(Component):
                         )
                     ))
 
-        for sid in Group.groupsBy(self.env):
+        autocomplete = AutoCompleteGroup(self.env)
+        for sid in autocomplete.get_autocomplete_values('shown_groups'):
             select.append(tag.option(
                              Group(self.env, sid).label, 
                              value=sid,

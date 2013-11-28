@@ -185,7 +185,7 @@ $(document).ready(function($) {
 
     for(var i = 0; i < memberLength; i ++) {
       var member = data.members[i];
-      members.push({ 'id': member.username, 'text': (member.name || member.username) });
+      members.push({ 'id': member.id, 'text': (member.name || member.id) });
     }
 
     if(memberLength == 0) {
@@ -233,7 +233,7 @@ $(document).ready(function($) {
 
           for(i; i < memberCount; i ++) {
             var member = members[i];
-            object.children.push({ 'id': member.username, 'text': (member.name || member.username) })
+            object.children.push({ 'id': member.id, 'text': (member.name || member.id) })
           }
 
           if(memberCount == 0) {

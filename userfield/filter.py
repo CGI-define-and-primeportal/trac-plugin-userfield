@@ -44,6 +44,8 @@ class UserFieldModule(Component):
             "admin_components.html": ["input[name='owner']"]
         }
 
+        page_map["hours_timeline.html"] = page_map["query.html"]
+
         if filename in page_map:
             if filename == "ticket.html":
                 selector.extend('#field-' + n for n in self._user_fields())

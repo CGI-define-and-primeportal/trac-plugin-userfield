@@ -116,7 +116,7 @@ class UserFieldModule(Component):
                 for subject, permission in perms:
                     if permission == group_name and subject not in all_groups:
                         session = DetachedSession(self.env, subject)
-                        session.update(username=subject)
+                        session.update(id=subject)
                         groups[group_name]['members'].append(session)
 
         add_script_data(req, {'userGroups': groups })

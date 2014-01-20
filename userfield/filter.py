@@ -183,7 +183,7 @@ class CustomFieldAdminTweak(Component):
                  )
 
         edit_name = req.path_info.replace("/admin/ticket/customfields", "")[1:]
-        invalid_edit = re.search("[^a-zA-Z0-9]", edit_name)
+        invalid_edit = re.search("[^a-zA-Z0-9_]", edit_name)
 
         currently_editing = edit_name and not invalid_edit
 

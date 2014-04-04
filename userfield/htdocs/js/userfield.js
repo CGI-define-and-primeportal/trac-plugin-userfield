@@ -195,6 +195,7 @@ $(document).ready(function($) {
 
     optgroup = {
       'text': data.label,
+      'id': name,
       'children': members
     };
     optgroupCache[name] = optgroup;

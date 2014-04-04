@@ -29,18 +29,17 @@ class UserFieldModule(Component):
         doc='Additional request paths to match (use input class="user-field")')
 
     transform_owner_reporter = BoolOption('userfield', 'transform_owner_reporter', default='true',
-        doc='Transform the owner and reporter fields into user fields too')
+        doc='Transform the owner, reporter, qualityassurancecontact fields into user fields too')
 
     implements(ITicketManipulator, ITemplateStreamFilter)
 
     # ITemplateStreamFilter methods
     def filter_stream(self, req, method, filename, stream, data):
-
         selector = ['.user-field']
         page_map = {
-            "ticket.html": ["#field-owner", "#field-reporter"],
+            "ticket.html": ["#field-owner", "#field-reporter", "#field-qualityassurancecontact"],
             "query.html": ["#mods-filters input[name$='_" + field + "']"
-                            for field in ("owner", "reporter")],
+                            for field in ("owner", "reporter", "qualityassurancecontact")],
             "admin_components.html": ["input[name='owner']"]
         }
 

@@ -4,9 +4,7 @@
  * =============================== */
 
 $(document).ready(function($) {
-  $(window.userfieldSelector).each(function() {
-    $(this).userField();
-  });
+  $(window.userfieldSelector).userField();
 });
 
 
@@ -37,29 +35,32 @@ $(document).ready(function($) {
   };
 
   $.fn.userField = function() {
-    var groups = [], elmValue;
+    return this.each(function() {
+      var $elem = $(this),
+          groups = [], elmValue,
 
-    // Process original input
-    var processed   = process(this),
-        $select     = processed[0],
-        groups      = processed[1],
-        elmValue    = processed[2];
+          // Process original input
+          processed   = process($elem),
+          $select     = processed[0],
+          groups      = processed[1],
+          elmValue    = processed[2],
 
-    // Generate select2 options and data
-    var opts = generate_s2_options($select, groups, elmValue);
+          // Generate select2 options and data
+          opts = generate_s2_options($select, groups, elmValue);
 
-    // Replace original
-    $select.insertAfter(this);
-    this.remove();
+      // Replace original
+      $select.insertAfter($elem);
+      $elem.remove();
 
-    // Construct select2
-    $select.select2(opts).select2("val", elmValue);
+      // Construct select2
+      $select.select2(opts).select2("val", elmValue);
 
-    // Process clicking on remote group
-    $select.on("select2-selecting", function(e) {
-      event_option_selected(e, $select);
+      // Process clicking on remote group
+      $select.on("select2-selecting", function(e) {
+        event_option_selected(e, $select);
+      });
     });
-  }
+  };
 
   /**
    * Process the original element (input or select)

@@ -106,6 +106,10 @@ class UserFieldModule(Component):
         autocomplete = AutoCompleteGroup(self.env)
 
         all_groups = set(Group.groupsBy(self.env))
+        # TODO: we should remove the autocomplete plugin, at least
+        # once userfield can handle "cc style" fields (e.g., multiple
+        # users selected) and then I think userfieldplugin should take over ownership
+        # of the "shown_groups" settings
         shown_groups = autocomplete.get_autocomplete_values('shown_groups')
 
         groups = {}

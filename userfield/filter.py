@@ -22,16 +22,17 @@ from itertools import chain
 from traceback import format_exc
 import re
 
+from api import IUserFieldUser
+
 class UserFieldModule(Component):
     """A module providing a user custom field based on user group."""
-
-    match_req = ListOption('userfield', 'match_request', default='[]',
-        doc='Additional request paths to match (use input class="user-field")')
 
     transform_owner_reporter = BoolOption('userfield', 'transform_owner_reporter', default='true',
         doc='Transform the owner, reporter fields into user fields too')
 
     implements(ITicketManipulator, ITemplateStreamFilter)
+
+    extra_templates = ExtensionPoint(IUserFieldUser)
 
     # ITemplateStreamFilter methods
     def filter_stream(self, req, method, filename, stream, data):
@@ -45,12 +46,18 @@ class UserFieldModule(Component):
 
         page_map["hours_timeline.html"] = page_map["query.html"]
 
+        def _template_filenames():
+            for plugin in self.extra_templates:
+                for filename in plugin.get_templates():
+                    yield filename
+
         if filename in page_map:
             if filename == "ticket.html":
                 selector.extend('#field-' + n for n in self._user_fields())
             if self.transform_owner_reporter:
                 selector.extend(page_map[filename])
 
+        if filename in page_map or filename in _template_filenames():
             self._add_groups_data(req)
             add_script_data(req, {'userfieldSelector': ','.join(selector) })
             add_script(req, 'userfield/js/userfield.js')

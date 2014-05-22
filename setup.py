@@ -24,6 +24,7 @@ setup(
     entry_points={
         'trac.plugins': [
             'userfield.filter = userfield.filter',
+            'userfield.api = userfield.api',
         ]
     },
 )

@@ -41,8 +41,7 @@ class UserFieldModule(Component):
             "ticket.html": ["#field-owner", "#field-reporter"],
             "query.html": ["#mods-filters input[name$='_" + field + "']"
                             for field in ("owner", "reporter")],
-            "admin_components.html": ["input[name='owner']"],
-            "taskboard.html": ["input[class='user-field']"]
+            "admin_components.html": ["input[name='owner']"]
         }
 
         page_map["hours_timeline.html"] = page_map["query.html"]

@@ -5,6 +5,11 @@
 
 $(document).ready(function($) {
   $(window.userfieldSelector).userField();
+  
+  // patch to allow manual entry on dialog box 
+  $.ui.dialog.prototype._allowInteraction = function(e) {
+    return !!$(e.target).closest('.ui-dialog, .ui-datepicker, .select2-drop').length;
+  };
 });
 
 

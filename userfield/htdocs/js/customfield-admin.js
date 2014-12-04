@@ -4,7 +4,7 @@ $(document).ready(function() {
       $select = $("#select-user-groups"),
       $radios = $("input[name='all_or_selection']");
 
-  $select.select2();
+  $select.select2({width: 'resolve'});
   var $select2 = $("#s2id_select-user-groups");
 
   // Show the "Included Groups" row only when type "user" set

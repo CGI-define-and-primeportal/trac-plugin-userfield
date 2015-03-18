@@ -20,11 +20,11 @@ $(document).ready(function($) {
         container.addClass("remote").addClass("remote-" + object.remote);
         switch(object.remote) {
           case "closed":
-            return "<i class='icon-plus-sign-alt'></i> " + object.text;
+            return "<i class='fa fa-plus-square'></i> " + object.text;
           case "loading":
-            return "<i class='icon-spinner icon-spin'></i> " + object.text;
+            return "<i class='fa fa-spinner fa-spin'></i> " + object.text;
           case "open":
-            return "<i class='icon-external-link-sign'></i> " + object.text;
+            return "<i class='fa fa-external-link-square'></i> " + object.text;
         }
       }
       if(object.hasOwnProperty("none")) container.addClass("color-muted-dark");

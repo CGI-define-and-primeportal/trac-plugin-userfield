@@ -285,6 +285,15 @@ class CustomFieldAdminTweak(Component):
                         select,
                         class_="field",
                     ),
+                    tag.div(
+                        tag.label(class_="fixed-width-label"),
+                        tag.span('To have more groups listed here, check "Show by default in user drop down boxes" in ',
+                                 tag.a("Manage Access and Groups",
+                                       target="_blank",
+                                       href=req.href.admin('access', 'access_and_groups')),
+                                 ' administration page.'),
+                        id="group-selection-help"
+                    ),
                     manual,
                     id="user-groups",
                     class_="hidden"

@@ -4,7 +4,7 @@ $(document).ready(function() {
       $select = $("#select-user-groups"),
       $radios = $("input[name='all_or_selection']");
 
-  $select.select2({width: 'resolve'});
+  $select.select2({width: 'resolve', placeholder: 'Select groups'});
   var $select2 = $("#s2id_select-user-groups");
 
   // Show the "Included Groups" row only when type "user" set
@@ -14,13 +14,13 @@ $(document).ready(function() {
   // If there's an initial set value of "all", hide the select2
   if($radios.filter(":checked").val() == "all") $select2.hide();
 
-  // When we change the radio button's value, slide the select2 up/down
+  // When we change the radio button's value, show the select2
   $($radios).change(function() {
     if($(this).val() == "selection") {
-      $select2.slideDown();
+      $select2.show();
     }
     else {
-      $select2.slideUp();
+      $select2.hide();
     }
   });
 })

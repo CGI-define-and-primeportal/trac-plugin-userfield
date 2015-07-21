@@ -215,8 +215,10 @@ class CustomFieldAdminTweak(Component):
                         class_="fixed-width-label"
                     ),
                     tag.select(
-                        tag.option("No", value="false", selected=(not is_manual or None)),
-                        tag.option("Yes", value="true", selected=(is_manual or None)),
+                        tag.option("No - no, must be selected from list",
+                                   value="false", selected=(not is_manual or None)),
+                        tag.option("Yes - can type in a username",
+                                   value="true", selected=(is_manual or None)),
                         name="manual_selection",
                         class_="large"
                     ),
@@ -238,13 +240,14 @@ class CustomFieldAdminTweak(Component):
                         class_="color-muted"
                     ),
                     tag.label(
-                        "Selection",
+                        "Selection ",
                         tag.input(
                             type="radio",
                             value="selection",
                             name="all_or_selection",
                             checked=(None if "*" in groups else "checked"),
-                        )
+                        ),
+                        style="padding-right: 5px"
                     ))
 
         autocomplete = AutoCompleteGroup(self.env)

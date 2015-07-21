@@ -169,7 +169,7 @@ class CustomFieldAdminTweak(Component):
         if req.method == "POST" and valid_page:
             if req.args.get('type') == 'user':
                 self.config.set('ticket-custom', '%s.manual'%(req.args.get('name')),
-                                req.args.get("manual_selection") == "true" and "true" or "false")
+                                req.args.get("manual_selection") == "manual" and "true" or "false")
 
                 if req.args.get("all_or_selection") == "all":
                     self.config.set('ticket-custom',
@@ -206,19 +206,18 @@ class CustomFieldAdminTweak(Component):
         else:
             groups = []
 
-        is_manual = self.config.get("ticket-custom", edit_name+".manual")
+        is_manual = self.config.getbool("ticket-custom", edit_name+".manual")
 
         manual = tag.div(
                     tag.label(
-                        "Allow manual entry:",
+                        "Allow typing a name which is not in the list:",
                         for_="manual_selection",
                         class_="fixed-width-label"
                     ),
-                    tag.select(
-                        tag.option("No - no, must be selected from list",
-                                   value="false", selected=(not is_manual or None)),
-                        tag.option("Yes - can type in a username",
-                                   value="true", selected=(is_manual or None)),
+                    tag.input(
+                        value="manual",
+                        checked="checked" if is_manual else None,
+                        type_="checkbox",
                         name="manual_selection",
                         class_="large"
                     ),

@@ -218,8 +218,7 @@ class CustomFieldAdminTweak(Component):
                         value="manual",
                         checked="checked" if is_manual else None,
                         type_="checkbox",
-                        name="manual_selection",
-                        class_="large"
+                        name="manual_selection"
                     ),
                     class_="field"
                 )

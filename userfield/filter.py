@@ -1,11 +1,10 @@
 from trac.core import *
 from trac.perm import PermissionSystem
 from trac.web.api import IRequestFilter, ITemplateStreamFilter
-from trac.web.chrome import (ITemplateProvider, add_script, add_script_data,
-                             add_stylesheet)
+from trac.web.chrome import (ITemplateProvider, add_script, add_script_data)
 from trac.ticket.api import ITicketManipulator
 from trac.ticket.web_ui import TicketModule
-from trac.config import Option, IntOption, BoolOption, ListOption
+from trac.config import BoolOption
 
 from trac.web.session import DetachedSession
 
@@ -17,8 +16,6 @@ from autocompleteplugin.model import AutoCompleteGroup
 from simplifiedpermissionsadminplugin.model import Group
 from simplifiedpermissionsadminplugin.api import SimplifiedPermissionsSystem
 
-import time
-from itertools import chain
 from traceback import format_exc
 import re
 
